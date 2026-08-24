@@ -1,0 +1,117 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id           String        @id @default(cuid())
+  name         String
+  email        String        @unique
+  password     String
+  businessName String?
+  mode         String        @default("business") // "personal" | "business" | "entrepreneur"
+  category     String?
+  transactions Transaction[]
+  customers    Customer[]
+  goals        Goal[]
+  profile      BusinessProfile?
+  invoices     Invoice[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model Customer {
+  id           String        @id @default(cuid())
+  name         String
+  phone        String?
+  email        String?
+  userId       String
+  user         User          @relation(fields: [userId], references: [id])
+  transactions Transaction[]
+  invoices     Invoice[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model Transaction {
+  id          String    @id @default(cuid())
+  type        String    // "INCOME" | "EXPENSE" | "CREDIT" | "PURCHASE"
+  amount      Float
+  category    String
+  paymentMode String    @default("cash") // "cash" | "upi" | "bank"
+  date        DateTime
+  description String?
+  tags        String?
+  dueDate     DateTime?
+  isPaid      Boolean   @default(false)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  customerId  String?
+  customer    Customer? @relation(fields: [customerId], references: [id])
+  invoice     Invoice?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Goal {
+  id        String   @id @default(cuid())
+  name      String
+  type      String   // "income" | "expense_limit"
+  target    Float
+  period    String   @default("monthly")
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model BusinessProfile {
+  id           String   @id @default(cuid())
+  businessName String
+  address      String?
+  phone        String?
+  email        String?
+  gstin        String?
+  upiId        String?
+  logoUrl      String?
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Invoice {
+  id            String        @id @default(cuid())
+  invoiceNumber String
+  date          DateTime      @default(now())
+  dueDate       DateTime?
+  status        String        @default("DRAFT") // DRAFT, SENT, PAID, OVERDUE
+  subtotal      Float
+  taxTotal      Float         @default(0)
+  total         Float
+  notes         String?
+  terms         String?
+  userId        String
+  user          User          @relation(fields: [userId], references: [id])
+  customerId    String?
+  customer      Customer?     @relation(fields: [customerId], references: [id])
+  transactionId String?       @unique
+  transaction   Transaction?  @relation(fields: [transactionId], references: [id])
+  items         InvoiceItem[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model InvoiceItem {
+  id          String   @id @default(cuid())
+  description String
+  quantity    Float    @default(1)
+  rate        Float
+  taxPercent  Float    @default(0)
+  total       Float
+  invoiceId   String
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+}
